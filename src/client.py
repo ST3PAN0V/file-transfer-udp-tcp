@@ -1,10 +1,8 @@
+from config import *
+
 import socket
 from os.path import abspath
 import sys
-
-SERVER_HOST = '127.0.0.1'
-SERVER_PORT = 8080
-BUFFER = 4096
 
 class TCPClient:
     """
@@ -38,6 +36,8 @@ class TCPClient:
                         break
                     file.write(data)
                 print("downloaded as", abspath(self.file_path), flush=True)
+        except FileNotFoundError:
+            print(f"Error: wrong path: '{self.file_path}'")
         except Exception as exc:
             print(f"Err: {exc}")
         finally:
@@ -56,7 +56,7 @@ class TCPClient:
             print(f"requesting from {self.host}:{self.port}")
             self._receive_file()
         except Exception as exc:
-            print(f"Err: {exc}")
+            print(f"Error: {exc}")
         finally:
             self.sock.close()
 

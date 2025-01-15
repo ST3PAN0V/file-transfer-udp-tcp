@@ -1,10 +1,8 @@
+from config import *
+
 import socket
 from os.path import abspath
 import sys
-
-SERVER_HOST = '127.0.0.1'
-SERVER_PORT = 8080
-BUFFER = 4096
 
 class TCPServer:
     """
@@ -39,8 +37,10 @@ class TCPServer:
                     conn.send(data)
             print("finished sending to",
                   f"{conn.getpeername()[0]}:{conn.getpeername()[1]}")
+        except FileNotFoundError:
+            print(f"Error: File '{self.file_path}' not found.")
         except Exception as e:
-            print(f"Err: {e}")
+            print(f"Error: {e}")
         finally:
             conn.close()
 
@@ -61,7 +61,7 @@ class TCPServer:
             print("request from", f"{addr[0]}:{addr[1]}")
             self._send_file(conn)
         except Exception as exc:
-            print(f"Err: {exc}")
+            print(f"Error: {exc}")
         finally:
             self.sock.close()
 
