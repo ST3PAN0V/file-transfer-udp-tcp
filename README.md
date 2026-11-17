@@ -1,37 +1,37 @@
-# File Transfer over TCP and UDP
+# Передача файлов по TCP и UDP
 
-A programming test assignment implemented by [ST3PAN0V](https://github.com/ST3PAN0V): separate Python clients and servers for transferring a file over TCP and UDP, with Bash scripts for checking the received contents.
+Решение тестового задания от [ST3PAN0V](https://github.com/ST3PAN0V): отдельные клиент и сервер на Python для передачи файлов по TCP и UDP, а также Bash-скрипты для проверки полученного содержимого.
 
-## Choose an implementation
+## Выбор реализации
 
-| Branch | Contents |
+| Ветка | Содержимое |
 | --- | --- |
-| [main](https://github.com/ST3PAN0V/file-transfer-udp-tcp/tree/main) | Project overview and empty source placeholders |
-| [tcp](https://github.com/ST3PAN0V/file-transfer-udp-tcp/tree/tcp) | TCP client, server, and transfer test |
-| [udp](https://github.com/ST3PAN0V/file-transfer-udp-tcp/tree/udp) | UDP client, server, and transfer test |
+| [main](https://github.com/ST3PAN0V/file-transfer-udp-tcp/tree/main) | Обзор проекта и пустые заготовки исходников |
+| [tcp](https://github.com/ST3PAN0V/file-transfer-udp-tcp/tree/tcp) | TCP-клиент, сервер и проверка передачи |
+| [udp](https://github.com/ST3PAN0V/file-transfer-udp-tcp/tree/udp) | UDP-клиент, сервер и проверка передачи |
 
-**Use the `tcp` or `udp` branch to run the programs.** Both implementation branches use this layout:
+**Для запуска переключитесь на ветку `tcp` или `udp`.** Обе реализации имеют одинаковую структуру:
 
-| Path | Purpose |
+| Путь | Назначение |
 | --- | --- |
-| `src/server.py` | Serve the file selected on the command line |
-| `src/client.py` | Receive data and write it to the selected output file |
-| `src/config.py` | Socket settings and buffer size; the UDP branch also defines a timeout |
-| `test/test_script.sh` | Generate a test file, run the transfer, and compare contents |
+| `src/server.py` | Передать файл, указанный при запуске |
+| `src/client.py` | Получить данные и записать их в выбранный выходной файл |
+| `src/config.py` | Настройки сокетов и размер буфера; в UDP-ветке также задан тайм-аут |
+| `test/test_script.sh` | Создать тестовый файл, выполнить передачу и сравнить содержимое |
 
-## How it works
+## Как работает передача
 
-- The server opens a file in binary mode and sends it in blocks.
-- The TCP client reads until the connection closes.
-- The UDP client sends an initial datagram, then receives data until an inactivity timeout or an empty datagram.
-- Each server handles one transfer and then exits.
-- The server argument selects the source file. The client argument selects a local output path; it does not request an arbitrary pathname from the server.
+- Сервер открывает файл в двоичном режиме и отправляет его блоками.
+- TCP-клиент читает данные до закрытия соединения.
+- UDP-клиент отправляет начальную датаграмму, затем принимает данные до тайм-аута неактивности или пустой датаграммы.
+- Каждый сервер выполняет одну передачу и завершает работу.
+- Аргумент сервера задаёт исходный файл. Аргумент клиента задаёт локальный путь для сохранения: он не выбирает произвольный файл на сервере.
 
-The code uses Python's standard library. The test scripts use Bash and common Unix utilities, including `cmp`.
+Программы используют стандартную библиотеку Python. Для проверок нужны Bash и обычные Unix-утилиты, включая `cmp`.
 
-## Set up
+## Подготовка
 
-Requirements: Git, Python 3 with `venv` support, and a Unix-like environment for the Bash tests. A virtual environment makes the `python` command used by the scripts resolve to Python 3; there are no third-party Python packages to install.
+Требуются Git, Python 3 с поддержкой `venv` и Unix-подобная среда для Bash-скриптов. Виртуальное окружение обеспечивает запуск Python 3 по команде `python`, которую используют скрипты. Сторонние Python-пакеты устанавливать не нужно.
 
 ```bash
 git clone --branch tcp https://github.com/ST3PAN0V/file-transfer-udp-tcp.git
@@ -41,24 +41,24 @@ source .venv/bin/activate
 python --version
 ```
 
-To try UDP in the same checkout:
+Чтобы попробовать UDP в той же рабочей копии:
 
 ```bash
 git switch udp
 ```
 
-Connection settings are defined in `src/config.py` on each branch. The client and server must use matching settings.
+Настройки соединения находятся в `src/config.py` соответствующей ветки. Параметры клиента и сервера должны совпадать.
 
-## Run a transfer
+## Передача файла
 
-In the first terminal, from the repository root with the virtual environment active:
+В первом терминале, из корня репозитория с активным виртуальным окружением:
 
 ```bash
 printf 'A small file-transfer example.\n' > sample-input.txt
 python src/server.py sample-input.txt
 ```
 
-Wait for the server's `serving` message. In a second terminal, open the same repository directory and run:
+Дождитесь сообщения сервера `serving`. Во втором терминале откройте тот же каталог репозитория и выполните:
 
 ```bash
 source .venv/bin/activate
@@ -66,11 +66,11 @@ python src/client.py sample-output.txt
 cmp sample-input.txt sample-output.txt
 ```
 
-`cmp` exits with status `0` when the files are identical. The client overwrites the output file if it already exists. Restart the server before each new transfer.
+При совпадении файлов `cmp` завершается с кодом `0`. Если выходной файл существует, клиент перезапишет его. Перед каждой новой передачей запускайте сервер заново.
 
-## Run the supplied test
+## Проверка скриптом
 
-On either implementation branch, from the repository root:
+Из корня репозитория в любой ветке с реализацией:
 
 ```bash
 source .venv/bin/activate
@@ -78,19 +78,19 @@ source .venv/bin/activate
 cmp test/original_test_file.txt test/received_test_file.txt
 ```
 
-The script generates roughly 1–10 MiB of random alphanumeric data, waits for readiness messages in the program logs, and compares the files. Its final success message does not reliably indicate a matching transfer, so check the explicit `cmp` result above.
+Скрипт создаёт примерно 1–10 МиБ случайных буквенно-цифровых данных, ожидает сообщения о готовности в логах программ и сравнивает файлы. Его итоговое сообщение об успехе не всегда означает совпадение содержимого, поэтому проверяйте результат отдельной команды `cmp`, приведённой выше.
 
-Logs and generated files are placed under `test/`. To remove the test artifacts:
+Логи и созданные файлы находятся в `test/`. Удалить результаты проверки можно так:
 
 ```bash
 (cd test && bash test_script.sh --clean)
 ```
 
-## Implementation limits
+## Ограничения реализации
 
-- **TCP:** the server currently uses `send()` without checking how many bytes were written. Handling partial writes is necessary before relying on complete transfers in all conditions.
-- **UDP:** there are no sequence numbers, acknowledgements, or retransmissions. Lost or reordered datagrams are not recovered, and an inactivity timeout is treated as the end of the transfer.
-- **Concurrency:** the servers are designed for a single transfer per run; they do not accept concurrent clients.
-- **Verification:** the test scripts provide a local exercise, not a guarantee of reliable delivery for arbitrary file sizes or network conditions.
+- **TCP:** сервер вызывает `send()` без проверки количества отправленных байтов. Для полной передачи во всех условиях нужно обрабатывать частичную запись.
+- **UDP:** нет номеров последовательности, подтверждений доставки и повторной отправки. Потерянные или переставленные датаграммы не восстанавливаются; тайм-аут неактивности считается концом передачи.
+- **Параллельная работа:** серверы рассчитаны на одну передачу за запуск и не принимают нескольких клиентов одновременно.
+- **Проверки:** Bash-скрипты предназначены для локального тестового сценария и не гарантируют надёжную доставку файлов любого размера при любых сетевых условиях.
 
-The original assignment asked for TCP and UDP file-transfer programs and a Bash test using a file larger than 1 MiB. The implementation keeps the deliberately limited, single-client scope described by the author.
+Исходное задание требовало программы передачи файлов по TCP и UDP и Bash-проверку на файле больше 1 МиБ. Реализация сохраняет описанный автором ограниченный сценарий работы с одним клиентом.
