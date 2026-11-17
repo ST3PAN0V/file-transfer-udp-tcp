@@ -1,54 +1,96 @@
-# About
-Это мое решение тестового задания.
+# File Transfer over TCP and UDP
 
-В ветке main ничего нет, только поясняющий README. 
-- В ветке tcp реализовал сервер и клиент на tcp-сокетах.
-- В ветке udp соответственно клиент и сервер на udp-сокетах.
+A programming test assignment implemented by [ST3PAN0V](https://github.com/ST3PAN0V): separate Python clients and servers for transferring a file over TCP and UDP, with Bash scripts for checking the received contents.
 
-## Задание
-Написать программы, которые используют сокеты для передачи файлов любого разме-
-ра и наполнения. Должна получиться программа-клиент, которая может запросить файл, и
-программа-сервер, которая должна по запросу его отправить. Нужно написать две реализации
-этих программ, одну с использованием tcp, а другую – с использованием udp.
-Кроме этого, нужно написать тест на bash, который создаст файл размером более 1 мегабай-
-та со случайным содержимым, запустит эти две программы, чтобы клиент получил созданный
-файл от сервера, а затем проверит, что отправленный и полученный файлы совпадают.
-## Оформление решения
-Мы ожидаем получить архив с git-репозиторием, сообщения коммитов должны быть содер-
-жательными (в идеале по conventional commit). В репозитории должно быть две ветки: tcp с
-реализацией на tcp сокетах, и udp с реализацией на udp сокетах.
-## Структура репозитория:
-src/
-test/
-В src/ должны быть исходники сервера и клиента, в test/ – исходники теста. У каждой
-функции в .py файлах должно быть описание, и код должен быть оформлен по PEP8.
-## Пример вывода программ
+## Choose an implementation
+
+| Branch | Contents |
+| --- | --- |
+| [main](https://github.com/ST3PAN0V/file-transfer-udp-tcp/tree/main) | Project overview and empty source placeholders |
+| [tcp](https://github.com/ST3PAN0V/file-transfer-udp-tcp/tree/tcp) | TCP client, server, and transfer test |
+| [udp](https://github.com/ST3PAN0V/file-transfer-udp-tcp/tree/udp) | UDP client, server, and transfer test |
+
+**Use the `tcp` or `udp` branch to run the programs.** Both implementation branches use this layout:
+
+| Path | Purpose |
+| --- | --- |
+| `src/server.py` | Serve the file selected on the command line |
+| `src/client.py` | Receive data and write it to the selected output file |
+| `src/config.py` | Socket settings and buffer size; the UDP branch also defines a timeout |
+| `test/test_script.sh` | Generate a test file, run the transfer, and compare contents |
+
+## How it works
+
+- The server opens a file in binary mode and sends it in blocks.
+- The TCP client reads until the connection closes.
+- The UDP client sends an initial datagram, then receives data until an inactivity timeout or an empty datagram.
+- Each server handles one transfer and then exits.
+- The server argument selects the source file. The client argument selects a local output path; it does not request an arbitrary pathname from the server.
+
+The code uses Python's standard library. The test scripts use Bash and common Unix utilities, including `cmp`.
+
+## Set up
+
+Requirements: Git, Python 3 with `venv` support, and a Unix-like environment for the Bash tests. A virtual environment makes the `python` command used by the scripts resolve to Python 3; there are no third-party Python packages to install.
+
 ```bash
-> python src/server.py filetoserve
-serving /path/to/filetoserve
-request from 127.0.0.1:8081
-sending...
-finished sending to 127.0.0.1:8081
-----------------------------------
-> python src/client.py newfile
-requesting from 127.0.0.1:8080
-downloading...
-downloaded as /path/to/newfile
+git clone --branch tcp https://github.com/ST3PAN0V/file-transfer-udp-tcp.git
+cd file-transfer-udp-tcp
+python3 -m venv .venv
+source .venv/bin/activate
+python --version
 ```
 
-# Примечания
+To try UDP in the same checkout:
 
-## Реализация tcp и udp
-Некоторые вещи я не стал реализовывать намеренно, т.к есть некоторые нюансы которые стоило бы уточнить.
-С tcp все гладко. Но с udp возможно несколько вариантов релизации, передачи огромных файлов(как я вижу):
-1. По фрагментам размером 4096 байт(необязательно 4096), пока не придёт пустой файл, потом соединение закроется.
-2. Можно было бы сначала отправлять пакет, который сообщает размер передаваемого файла, а далее клиент бы уже знал сколько байт ему надо принять.
-3. Отправка специального сообщения, сообщающее, что все пакеты получены.
-Можно было сделать так, что бы udp работал корректно и получал бы весь поток байт без потерь, добавить подтверждающие пакеты со стороны сервера, трехкратное рукопожатие, но тогда бы udp превратился в tcp и потерял юы скорость. Не знаю насколько нужно было это делать, я решил обойтись без этого.
+```bash
+git switch udp
+```
 
-### Сервер
-Как я понял не было необходимости застявлять сервер работать постоянно, и сервер должен быть настроен на 1 соединение. В противном случае реализацию нужно менять, чтобы сервер асинхронно обрабатывал подключения >1 числа клиентов.
+Connection settings are defined in `src/config.py` on each branch. The client and server must use matching settings.
 
-## Реализация теста
-Я сделал генерацию файла разного размера каждый раз, т.к посчитал, что это улучшит тестирование.
-Нужно было как-то синхронизировать сервер и клиент, был вариант сделать это через `sleep`, но это не гибко. поэтому я отслеживал логи, так синхронизация была более гибкой.
+## Run a transfer
+
+In the first terminal, from the repository root with the virtual environment active:
+
+```bash
+printf 'A small file-transfer example.\n' > sample-input.txt
+python src/server.py sample-input.txt
+```
+
+Wait for the server's `serving` message. In a second terminal, open the same repository directory and run:
+
+```bash
+source .venv/bin/activate
+python src/client.py sample-output.txt
+cmp sample-input.txt sample-output.txt
+```
+
+`cmp` exits with status `0` when the files are identical. The client overwrites the output file if it already exists. Restart the server before each new transfer.
+
+## Run the supplied test
+
+On either implementation branch, from the repository root:
+
+```bash
+source .venv/bin/activate
+(cd test && bash test_script.sh)
+cmp test/original_test_file.txt test/received_test_file.txt
+```
+
+The script generates roughly 1–10 MiB of random alphanumeric data, waits for readiness messages in the program logs, and compares the files. Its final success message does not reliably indicate a matching transfer, so check the explicit `cmp` result above.
+
+Logs and generated files are placed under `test/`. To remove the test artifacts:
+
+```bash
+(cd test && bash test_script.sh --clean)
+```
+
+## Implementation limits
+
+- **TCP:** the server currently uses `send()` without checking how many bytes were written. Handling partial writes is necessary before relying on complete transfers in all conditions.
+- **UDP:** there are no sequence numbers, acknowledgements, or retransmissions. Lost or reordered datagrams are not recovered, and an inactivity timeout is treated as the end of the transfer.
+- **Concurrency:** the servers are designed for a single transfer per run; they do not accept concurrent clients.
+- **Verification:** the test scripts provide a local exercise, not a guarantee of reliable delivery for arbitrary file sizes or network conditions.
+
+The original assignment asked for TCP and UDP file-transfer programs and a Bash test using a file larger than 1 MiB. The implementation keeps the deliberately limited, single-client scope described by the author.
